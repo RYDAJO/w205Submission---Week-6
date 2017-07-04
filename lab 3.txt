@@ -1,0 +1,123 @@
+##Question 1
+
+List the execution time of the weblog aggregation query for Hive, SparkSQL, and SparkSQL on Parquet.
+
+        Hive
+
+            CREATE EXTERNAL TABLE IF NOT EXISTS weblogs_flat
+            (weblog string)
+            ROW FORMAT DELIMITED
+            STORED AS TEXTFILE
+            LOCATION '/user/w205/lab_3/weblog_data';
+            
+                    Time taken: 1.534 seconds
+
+            SELECT * FROM weblogs_flat LIMIT 10;
+
+                    Time taken: 1.269 seconds, Fetched: 10 row(s)
+
+            SELECT * FROM weblogs_flat WHERE weblog NOT LIKE 'date%' LIMIT 10;
+
+                    Time taken: 0.401 seconds, Fetched: 10 row(s)
+
+            CREATE EXTERNAL TABLE IF NOT EXISTS weblogs_schema
+            (datetime string,
+            user_id string,
+            session_id string,
+            product_id string,
+            referrer string)
+            ROW FORMAT DELIMITED
+            FIELDS TERMINATED BY '\t'
+            STORED AS TEXTFILE
+            LOCATION '/user/w205/lab_3/weblog_data';
+
+                    Time taken: 0.336 seconds
+
+            SELECT user_id, COUNT(user_id) AS log_count
+            FROM weblogs_schema GROUP BY user_id
+            ORDER BY log_count DESC
+            LIMIT 50;
+            
+                    Time taken: 124.758 seconds, Fetched: 50 row(s)
+
+
+            CREATE EXTERNAL TABLE IF NOT EXISTS user_info
+            ( 
+             datetime string,
+             user_id string,
+             first_name string,
+             last_name string,
+             location string
+            )
+             ROW FORMAT DELIMITED
+             FIELDS TERMINATED BY '\t'
+             STORED AS TEXTFILE
+             LOCATION '/user/w205/lab_3/user_data'
+
+                    Time taken: 0.089 seconds
+
+
+
+        Spark 1: 
+
+            show tables;
+
+                    Time taken: 4.799 seconds, Fetched 3 row(s)
+
+
+
+        Spark 2: 
+
+            SELECT
+                user_id,
+                COUNT(user_id) AS log_count 
+            FROM weblogs_schema
+            GROUP BY user_id
+            ORDER BY log_count DESC
+            LIMIT 50;
+                    
+                    Time taken: 28.774 seconds, Fetched 50 row(s)
+
+
+            CREATE TABLE weblogs_parquet AS SELECT * FROM weblogs_schema;
+
+                    Time taken: 8.433 seconds
+
+
+            SELECT user_id, COUNT(user_id) AS log_count
+            FROM weblogs_parquet GROUP BY user_id
+            ORDER BY log_count DESC
+            LIMIT 50;
+
+                Time taken: 8.574 seconds, Fetched 50 row(s)
+
+
+
+##Question 2
+
+How many jobs does Hive launch? Does SparkSQL launch jobs?
+
+        Hive - 2 jobs
+        SparkSQL - 1 job
+
+##Question 3
+
+Write a query which joins weblogs_parquet to user_info and counts the top 5 locations. List the locations.
+
+        SELECT w.user_id, u.user_id, 
+        COUNT(w.user_id) AS log_count 
+        FROM weblogs_parquet w 
+        JOIN user_info u 
+        ON w.user_id=u.user_id 
+        GROUP BY w.user_id,u.user_id 
+        ORDER BY log_count DESC LIMIT 5;
+
+
+        _count DESC LIMIT 5;
+        __RequestVerificationToken_Lw__=A33DD   __RequestVerificationToken_Lw__=A33DD   14
+        __RequestVerificationToken_Lw__=1BB21	__RequestVerificationToken_Lw__=1BB21	12
+        __RequestVerificationToken_Lw__=B3A2A	__RequestVerificationToken_Lw__=B3A2A	12
+        __RequestVerificationToken_Lw__=CC1C3	__RequestVerificationToken_Lw__=CC1C3	12
+        __RequestVerificationToken_Lw__=3BB13	__RequestVerificationToken_Lw__=3BB13	12
+        Time taken: 6.779 seconds, Fetched 5 row(s)
+
